@@ -1,0 +1,38 @@
+{
+  "scenarios": [
+    {
+      "id": "scenario_001",
+      "name": "Suspicious encoded PowerShell",
+      "observation_category": "suspicious_powershell",
+      "responses": {
+        "ps_encoded_command": true,
+        "ps_download_behavior": false,
+        "ps_unusual_parent": true
+      },
+      "available_telemetry": ["windows_event_logs", "sysmon", "edr"],
+      "expected_candidate_techniques": ["T1059.001"]
+    },
+    {
+      "id": "scenario_002",
+      "name": "Multiple failed logons from unusual source",
+      "observation_category": "abnormal_authentication",
+      "responses": {
+        "auth_multiple_failures": true,
+        "auth_unusual_source": true
+      },
+      "available_telemetry": ["identity_logs", "entra_id_logs", "windows_event_logs"],
+      "expected_candidate_techniques": ["T1110"]
+    },
+    {
+      "id": "scenario_003",
+      "name": "Rapid file extension changes",
+      "observation_category": "rapid_file_modification",
+      "responses": {
+        "file_many_changes": true,
+        "file_extension_pattern": true
+      },
+      "available_telemetry": ["edr", "file_server_logs", "windows_event_logs"],
+      "expected_candidate_techniques": ["T1486"]
+    }
+  ]
+}

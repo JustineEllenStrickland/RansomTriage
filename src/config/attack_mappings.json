@@ -1,0 +1,40 @@
+{
+  "mappings": [
+    {
+      "technique_id": "T1059.001",
+      "technique_name": "PowerShell",
+      "tactic": "Execution",
+      "observation_category": "suspicious_powershell",
+      "conditions": ["ps_encoded_command", "ps_download_behavior", "ps_unusual_parent"],
+      "minimum_matches": 1,
+      "label": "candidate",
+      "rationale": "Suspicious PowerShell behavior may indicate script based execution associated with ransomware precursor activity.",
+      "evidence_sources": ["windows_event_logs", "sysmon", "edr"],
+      "revision_date": "2026-04-29"
+    },
+    {
+      "technique_id": "T1110",
+      "technique_name": "Brute Force",
+      "tactic": "Credential Access",
+      "observation_category": "abnormal_authentication",
+      "conditions": ["auth_multiple_failures", "auth_unusual_source"],
+      "minimum_matches": 1,
+      "label": "candidate",
+      "rationale": "Abnormal authentication activity may indicate credential access attempts preceding ransomware activity.",
+      "evidence_sources": ["identity_logs", "entra_id_logs", "windows_event_logs"],
+      "revision_date": "2026-04-29"
+    },
+    {
+      "technique_id": "T1486",
+      "technique_name": "Data Encrypted for Impact",
+      "tactic": "Impact",
+      "observation_category": "rapid_file_modification",
+      "conditions": ["file_many_changes", "file_extension_pattern"],
+      "minimum_matches": 1,
+      "label": "candidate",
+      "rationale": "Rapid file modification or extension changes may be consistent with ransomware impact behavior and require validation.",
+      "evidence_sources": ["edr", "file_server_logs", "windows_event_logs"],
+      "revision_date": "2026-04-29"
+    }
+  ]
+}

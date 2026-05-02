@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.venv/
+venv/
+env/
+
+# Test and cache
+.pytest_cache/
+.coverage
+htmlcov/
+
+# IDE
+.vscode/
+.idea/
+
+# Runtime data
+*.db
+*.sqlite
+*.sqlite3
+runtime/*
+exports/*
+logs/*
+
+# Keep folder placeholders if needed
+!runtime/.gitkeep
+!exports/.gitkeep
+!logs/.gitkeep
+
+# Sensitive or local artifacts
+*.log
+*.tmp
+*.bak
+*.env
+.env
+
+# OS
+.DS_Store
+Thumbs.db

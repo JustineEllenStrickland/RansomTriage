@@ -1,0 +1,57 @@
+{
+  "observation_categories": [
+    {
+      "id": "suspicious_powershell",
+      "label": "Suspicious PowerShell Activity",
+      "questions": [
+        {
+          "id": "ps_encoded_command",
+          "text": "Was encoded or obfuscated PowerShell observed?",
+          "type": "boolean"
+        },
+        {
+          "id": "ps_download_behavior",
+          "text": "Was PowerShell used to download or execute remote content?",
+          "type": "boolean"
+        },
+        {
+          "id": "ps_unusual_parent",
+          "text": "Was PowerShell launched by an unusual parent process?",
+          "type": "boolean"
+        }
+      ]
+    },
+    {
+      "id": "abnormal_authentication",
+      "label": "Abnormal Authentication Activity",
+      "questions": [
+        {
+          "id": "auth_multiple_failures",
+          "text": "Were multiple failed logons observed?",
+          "type": "boolean"
+        },
+        {
+          "id": "auth_unusual_source",
+          "text": "Was authentication observed from an unusual source?",
+          "type": "boolean"
+        }
+      ]
+    },
+    {
+      "id": "rapid_file_modification",
+      "label": "Rapid File Modification",
+      "questions": [
+        {
+          "id": "file_many_changes",
+          "text": "Were many files modified in a short time period?",
+          "type": "boolean"
+        },
+        {
+          "id": "file_extension_pattern",
+          "text": "Were unusual extensions or renamed files observed?",
+          "type": "boolean"
+        }
+      ]
+    }
+  ]
+}

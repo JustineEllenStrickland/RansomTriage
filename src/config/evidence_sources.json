@@ -1,0 +1,52 @@
+{
+  "evidence_sources": [
+    {
+      "id": "windows_event_logs",
+      "name": "Windows Event Logs",
+      "category": "endpoint",
+      "description": "Review process creation, logon events, service changes, and file related activity where available."
+    },
+    {
+      "id": "sysmon",
+      "name": "Sysmon Logs",
+      "category": "endpoint",
+      "description": "Review process creation, network connections, file creation, and registry activity."
+    },
+    {
+      "id": "edr",
+      "name": "Endpoint Detection and Response",
+      "category": "endpoint",
+      "description": "Review endpoint alerts, process trees, command lines, detections, and host timeline."
+    },
+    {
+      "id": "identity_logs",
+      "name": "Identity Logs",
+      "category": "identity",
+      "description": "Review failed logons, successful logons, source locations, and privilege use."
+    },
+    {
+      "id": "entra_id_logs",
+      "name": "Entra ID Sign In Logs",
+      "category": "identity",
+      "description": "Review cloud sign in patterns, conditional access outcomes, and unusual locations."
+    },
+    {
+      "id": "dns_logs",
+      "name": "DNS Logs",
+      "category": "network",
+      "description": "Review suspicious lookups, unusual domains, and possible command and control indicators."
+    },
+    {
+      "id": "firewall_logs",
+      "name": "Firewall Logs",
+      "category": "network",
+      "description": "Review unusual outbound traffic, denied connections, and connections to suspicious destinations."
+    },
+    {
+      "id": "file_server_logs",
+      "name": "File Server Logs",
+      "category": "storage",
+      "description": "Review rapid file modifications, deletions, renames, and access patterns."
+    }
+  ]
+}
