@@ -21,6 +21,7 @@ from src.services.attack_mapper import AttackMapper
 from src.services.evidence_recommender import EvidenceRecommender
 from src.services.report_generator import ReportGenerator
 from src.services.storage_service import StorageService
+from src.services.workflow_engine import WorkflowEngine
 
 
 class MainWindow(QMainWindow):
@@ -28,10 +29,14 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.project_root = Path(project_root)
         self.current_case = None
+        self.questions = []
+        self.current_question_index = 0
+        self.responses = {}
 
-        self.setWindowTitle("RansomTriage")
-        self.resize(950, 750)
+        self.setWindowTitle("RansomTriage: Guided Ransomware Triage")
+        self.resize(950, 760)
 
+        self.workflow_engine = WorkflowEngine(self.project_root / "src/config/workflow_questions.json")
         self.attack_mapper = AttackMapper(self.project_root / "src/config/attack_mappings.json")
         self.evidence_recommender = EvidenceRecommender(self.project_root / "src/config/evidence_sources.json")
         self.report_generator = ReportGenerator(self.project_root / "src/config/export_template.md")
@@ -42,7 +47,7 @@ class MainWindow(QMainWindow):
     def _build_ui(self):
         layout = QVBoxLayout()
 
-        title = QLabel("RansomTriage: Early Ransomware Triage Prototype")
+        title = QLabel("RansomTriage: Early Ransomware Triage Question Tree")
         title.setStyleSheet("font-size: 20px; font-weight: bold;")
         layout.addWidget(title)
 
@@ -52,12 +57,11 @@ class MainWindow(QMainWindow):
         subtitle.setStyleSheet("font-size: 12px; color: #555;")
         layout.addWidget(subtitle)
 
-        # Case intake
         intake_box = QGroupBox("1. Case Intake")
         form = QFormLayout()
 
         self.case_title = QLineEdit()
-        self.case_title.setText("Suspicious PowerShell and rapid file modification")
+        self.case_title.setText("Suspicious PowerShell activity")
 
         self.analyst = QLineEdit()
         self.analyst.setText("Demo Analyst")
@@ -71,9 +75,9 @@ class MainWindow(QMainWindow):
         self.observation_category.addItem("Rapid File Modification", "rapid_file_modification")
 
         self.observations = QTextEdit()
+        self.observations.setMaximumHeight(90)
         self.observations.setPlainText(
-            "Sanitized demo scenario. Suspicious PowerShell activity and rapid file modification were observed. "
-            "No real incident data is used."
+            "Sanitized demo scenario. Suspicious activity was observed. No real incident data is used."
         )
 
         form.addRow("Case Title:", self.case_title)
@@ -85,36 +89,31 @@ class MainWindow(QMainWindow):
         intake_box.setLayout(form)
         layout.addWidget(intake_box)
 
-        self.create_case_button = QPushButton("Create Case")
-        self.create_case_button.clicked.connect(self.create_case)
+        self.create_case_button = QPushButton("Create Case and Start Guided Triage")
+        self.create_case_button.clicked.connect(self.create_case_and_start_triage)
         layout.addWidget(self.create_case_button)
 
-        # Triage questions
-        triage_box = QGroupBox("2. Guided Triage Questions")
-        triage_layout = QVBoxLayout()
+        question_box = QGroupBox("2. Guided Question Tree")
+        question_layout = QVBoxLayout()
 
-        self.ps_encoded_command = QCheckBox("Encoded or obfuscated PowerShell observed")
-        self.ps_download_behavior = QCheckBox("PowerShell used to download or execute remote content")
-        self.ps_unusual_parent = QCheckBox("PowerShell launched by unusual parent process")
-        self.file_many_changes = QCheckBox("Many files modified in a short time period")
-        self.file_extension_pattern = QCheckBox("Unusual extensions or renamed files observed")
+        self.question_label = QLabel("Create a case to begin the guided triage question tree.")
+        self.question_label.setWordWrap(True)
+        self.question_label.setStyleSheet("font-size: 15px; font-weight: bold;")
+        question_layout.addWidget(self.question_label)
 
-        self.ps_encoded_command.setChecked(True)
-        self.file_many_changes.setChecked(True)
+        self.yes_button = QPushButton("Yes")
+        self.yes_button.clicked.connect(lambda: self.answer_question(True))
+        self.yes_button.setEnabled(False)
+        question_layout.addWidget(self.yes_button)
 
-        for checkbox in [
-            self.ps_encoded_command,
-            self.ps_download_behavior,
-            self.ps_unusual_parent,
-            self.file_many_changes,
-            self.file_extension_pattern,
-        ]:
-            triage_layout.addWidget(checkbox)
+        self.no_button = QPushButton("No")
+        self.no_button.clicked.connect(lambda: self.answer_question(False))
+        self.no_button.setEnabled(False)
+        question_layout.addWidget(self.no_button)
 
-        triage_box.setLayout(triage_layout)
-        layout.addWidget(triage_box)
+        question_box.setLayout(question_layout)
+        layout.addWidget(question_box)
 
-        # Available telemetry
         telemetry_box = QGroupBox("3. Available Telemetry")
         telemetry_layout = QVBoxLayout()
 
@@ -138,24 +137,22 @@ class MainWindow(QMainWindow):
         telemetry_box.setLayout(telemetry_layout)
         layout.addWidget(telemetry_box)
 
-        self.run_triage_button = QPushButton("Run Guided Triage")
-        self.run_triage_button.clicked.connect(self.run_triage)
-        layout.addWidget(self.run_triage_button)
-
-        # Review/export
         self.review_box = QTextEdit()
-        self.review_box.setPlaceholderText("Candidate mappings, evidence recommendations, and summary will appear here.")
+        self.review_box.setPlaceholderText(
+            "Candidate mappings, evidence recommendations, limitations, and summary will appear here."
+        )
         layout.addWidget(self.review_box)
 
         self.export_button = QPushButton("Export Markdown Case Summary")
         self.export_button.clicked.connect(self.export_summary)
+        self.export_button.setEnabled(False)
         layout.addWidget(self.export_button)
 
         container = QWidget()
         container.setLayout(layout)
         self.setCentralWidget(container)
 
-    def create_case(self):
+    def create_case_and_start_triage(self):
         self.current_case = Case(
             case_title=self.case_title.text(),
             analyst=self.analyst.text(),
@@ -168,41 +165,56 @@ class MainWindow(QMainWindow):
         runtime_path = self.project_root / "runtime/demo_case.json"
         self.storage_service.save_case(self.current_case, runtime_path)
 
+        self.questions = self.workflow_engine.get_questions(self.current_case.observation_category)
+        self.current_question_index = 0
+        self.responses = {}
+
+        if not self.questions:
+            self.question_label.setText("No questions were found for this observation category.")
+            return
+
+        self.yes_button.setEnabled(True)
+        self.no_button.setEnabled(True)
+        self.export_button.setEnabled(False)
+
         self.review_box.setPlainText(
             f"Case created successfully.\n\n"
             f"Case Title: {self.current_case.case_title}\n"
-            f"Analyst: {self.current_case.analyst}\n"
-            f"Affected Asset: {self.current_case.affected_asset}\n"
             f"Observation Category: {self.current_case.observation_category}\n"
-            f"Saved Locally: {runtime_path}\n"
+            f"Saved Locally: {runtime_path}\n\n"
+            f"Beginning guided triage question tree..."
         )
 
-    def run_triage(self):
-        if not self.current_case:
-            self.create_case()
+        self.show_current_question()
 
-        responses = {
-            "ps_encoded_command": self.ps_encoded_command.isChecked(),
-            "ps_download_behavior": self.ps_download_behavior.isChecked(),
-            "ps_unusual_parent": self.ps_unusual_parent.isChecked(),
-            "file_many_changes": self.file_many_changes.isChecked(),
-            "file_extension_pattern": self.file_extension_pattern.isChecked(),
-        }
+    def show_current_question(self):
+        question = self.questions[self.current_question_index]
+        self.question_label.setText(
+            f"Question {self.current_question_index + 1} of {len(self.questions)}:\n"
+            f"{question['text']}"
+        )
 
-        self.current_case.triage_responses = responses
+    def answer_question(self, answer: bool):
+        question = self.questions[self.current_question_index]
+        self.responses[question["id"]] = answer
+
+        self.current_question_index += 1
+
+        if self.current_question_index < len(self.questions):
+            self.show_current_question()
+        else:
+            self.finish_triage()
+
+    def finish_triage(self):
+        self.yes_button.setEnabled(False)
+        self.no_button.setEnabled(False)
+
+        self.current_case.triage_responses = self.responses
 
         mappings = self.attack_mapper.map_responses(
             self.current_case.observation_category,
-            responses,
+            self.responses,
         )
-
-        # Add rapid file modification mapping when file indicators are selected.
-        if responses["file_many_changes"] or responses["file_extension_pattern"]:
-            file_mappings = self.attack_mapper.map_responses(
-                "rapid_file_modification",
-                responses,
-            )
-            mappings.extend(file_mappings)
 
         self.current_case.candidate_mappings = mappings
 
@@ -224,19 +236,29 @@ class MainWindow(QMainWindow):
             "No live enterprise telemetry was used.",
         ]
 
+        if mappings:
+            self.question_label.setText("Guided triage complete. Candidate findings generated.")
+        else:
+            self.question_label.setText(
+                "Guided triage complete. No candidate mapping met the current rule threshold."
+            )
+
         summary = self.report_generator.generate_markdown(self.current_case)
         self.review_box.setPlainText(summary)
+        self.export_button.setEnabled(True)
 
     def export_summary(self):
         if not self.current_case:
             QMessageBox.warning(self, "No case", "Create and triage a case before exporting.")
             return
 
-        if not self.current_case.candidate_mappings:
-            self.run_triage()
-
         safe_time = datetime.now().strftime("%Y%m%d_%H%M%S")
         output_path = self.project_root / "exports" / f"ransomtriage_case_{safe_time}.md"
+
         self.report_generator.save_markdown(self.current_case, output_path)
 
-        QMessageBox.information(self, "Export complete", f"Summary exported to:\n{output_path}")
+        QMessageBox.information(
+            self,
+            "Export complete",
+            f"Markdown case summary exported to:\n{output_path}",
+        )
