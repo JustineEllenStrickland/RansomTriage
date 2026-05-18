@@ -44,15 +44,20 @@ This prototype is engineered to operate locally on a standard security workstati
 
 1. Clone and Environment Initialization
 	Ensure you have Python 3.10+ and virtualenv packages available in your workspace environment:
+```
 		python3 -m venv .venv
 		source .venv/bin/activate
-2. Dependency Resolution
+```
+3. Dependency Resolution
 	Install the required architectural third-party constraints mapped in the environment manifests:
+```
 		pip install -r requirements.txt
-3. Execution Space Launch
+```
+5. Execution Space Launch
 	Execute the application booster from the root workspace directory to spin up the UI context:
+```
 		python3 src/main.py
-
+```
 ---
 
 ## 📝 License
