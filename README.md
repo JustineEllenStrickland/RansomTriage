@@ -24,7 +24,7 @@ RansomTriage functions strictly as a **human-in-the-loop decision support engine
 ## 📂 Repository Structure
 
 The project strictly follows modular software design principles, decoupling backend analytical services from front-end desktop layouts:
-
+```
 RansomTriage/
 ├── data/                  # Public, synthetic, and sanitized test data profiles
 ├── design/                # System design blueprints, safeguards, and requirements
@@ -36,7 +36,7 @@ RansomTriage/
     ├── models/            # Core object schemas and data structures (Case, Mappings)
     ├── services/          # Decoupled business logic engines (AttackMapper, ReportGenerator)
     └── ui/                # PyQt6 graphical interface implementation (MainWindow, Workflows)
-
+```
 ---
 
 ## 🚀 Installation & Local Deployment
