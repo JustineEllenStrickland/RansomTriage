@@ -25,7 +25,6 @@ RansomTriage functions strictly as a **human-in-the-loop decision support engine
 
 The project strictly follows modular software design principles, decoupling backend analytical services from front-end desktop layouts:
 
-```text
 RansomTriage/
 ├── data/                  # Public, synthetic, and sanitized test data profiles
 ├── design/                # System design blueprints, safeguards, and requirements
