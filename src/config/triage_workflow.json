@@ -1,0 +1,358 @@
+{
+  "matrix_version": "2026.1",
+  "root_nodes": {
+    "Q1": {
+      "id": "Q1",
+      "text": "What type of technical platform or computing environment is involved in this incident?",
+      "guidance": "Ransomware actors target different matrices based on the asset types. Choose all environments where you have observed suspicious alerts or encryption.",
+      "allow_multiple": true,
+      "options": [
+        {"label": "Enterprise Platform", "value": "Enterprise"},
+        {"label": "Mobile Infrastructure", "value": "Mobile"},
+        {"label": "Industrial Systems (ICS)", "value": "ICS"},
+        {"label": "Unknown Environment", "value": "Im Not Sure"}
+      ]
+    },
+    "Q2_1": {
+      "id": "Q2_1",
+      "depends_on": "Enterprise",
+      "text": "What specific type of enterprise platform or operating infrastructure is affected?",
+      "guidance": "Look at your endpoint manager, inventory database, or the hostname schema to match these asset environments.",
+      "allow_multiple": true,
+      "options": [
+        {"label": "PRE (Physical/On-Prem)", "value": "PRE"},
+        {"label": "Windows Core", "value": "Windows"},
+        {"label": "macOS Fleet", "value": "macOS"},
+        {"label": "Linux Host Matrix", "value": "Linux"},
+        {"label": "Cloud: Office Suite", "value": "Cloud: Office Suite"},
+        {"label": "Cloud: Identity Provider", "value": "Cloud: Identity Provider"},
+        {"label": "Cloud: SaaS", "value": "Cloud: SaaS"},
+        {"label": "Cloud: IaaS", "value": "Cloud: IaaS"},
+        {"label": "Cloud: Generic", "value": "Cloud: Generic"},
+        {"label": "Network Appliances", "value": "Network Devices"},
+        {"label": "Containers/K8s", "value": "Containers"},
+        {"label": "ESXi/Hypervisor", "value": "ESXi"},
+        {"label": "Infrastructure Unknown", "value": "Infrastructure Unknown"}
+      ]
+    },
+    "Q2_2": {
+      "id": "Q2_2",
+      "depends_on": "Mobile",
+      "text": "What mobile ecosystem handles the compromised application or device?",
+      "guidance": "Check your Mobile Device Management (MDM) console or user report to confirm the device operating system.",
+      "allow_multiple": false,
+      "options": [
+        {"label": "Android OS", "value": "Android"},
+        {"label": "iOS Ecosystem", "value": "iOS"},
+        {"label": "Other", "value": "Other"},
+        {"label": "Unknown", "value": "Unknown"}
+      ]
+    }
+  },
+  "threat_nodes": {
+    "windows_core_ransomware": [
+      {
+        "id": "W1",
+        "phase": "Credential Harvesting & Domain Reconnaissance",
+        "text": "Is there any evidence of unexpected tools or processes accessing or dumping the memory of the Local Security Authority Subsystem (lsass.exe)?",
+        "guidance": "Look for alerts matching tools like Mimikatz, procdump.exe, or Task Manager being used to generate .dmp files.",
+        "technique_id": "T1003.001",
+        "technique_name": "OS Credential Dumping: LSASS Memory",
+        "allow_multiple": true,
+        "options": [
+          {"label": "Affirmative / Present", "value": "LSASS_PRESENT", "action": "FLAG_CRITICAL_CRED_THEFT"},
+          {"label": "Negative / Absent", "value": "LSASS_ABSENT", "action": "PROGRESS"},
+          {"label": "No Telemetry / Don't Know", "value": "LSASS_UNKNOWN", "action": "APPEND_TASK", "task_text": "Urgent: Check Sysmon Event ID 10 or EDR alerts for process handles opened against lsass.exe."}
+        ]
+      },
+      {
+        "id": "W2",
+        "phase": "Credential Harvesting & Domain Reconnaissance",
+        "text": "Has an asset been observed executing rapid, high-volume connections or pings across internal subnets over management ports (RDP, SMB, SSH)?",
+        "guidance": "Review network firewall logs or Sysmon Event ID 3 data for execution of Advanced IP Scanner.",
+        "technique_id": "T1018",
+        "technique_name": "Remote System Discovery",
+        "allow_multiple": true,
+        "options": [
+          {"label": "Affirmative / Present", "value": "SCAN_PRESENT", "action": "MARK_LATERAL_STAGING"},
+          {"label": "Negative / Absent", "value": "SCAN_ABSENT", "action": "PROGRESS"},
+          {"label": "No Telemetry / Don't Know", "value": "SCAN_UNKNOWN", "action": "APPEND_TASK", "task_text": "Review network firewall logs or Sysmon Event ID 3 data for execution of Advanced IP Scanner."}
+        ]
+      },
+      {
+        "id": "W3",
+        "phase": "Defense Evasion & Tool Inhibiting",
+        "text": "Are local antivirus definitions, Windows Defender services, or EDR agents being unexpectedly stopped, uninstalled, or restricted via registry modification?",
+        "guidance": "Query Windows System Event Logs for Service Control Manager Event ID 7036 (service stopped updates) for security tool names.",
+        "technique_id": "T1562.001",
+        "technique_name": "Impair Defenses: Disable or Modify Tools",
+        "allow_multiple": true,
+        "options": [
+          {"label": "Affirmative / Present", "value": "AV_DISABLED_PRESENT", "action": "FLAG_EXTREME_EXECUTION_RISK"},
+          {"label": "Negative / Absent", "value": "AV_DISABLED_ABSENT", "action": "PROGRESS"},
+          {"label": "No Telemetry / Don't Know", "value": "AV_DISABLED_UNKNOWN", "action": "APPEND_TASK", "task_text": "Query Windows System Event Logs for Service Control Manager Event ID 7036."}
+        ]
+      },
+      {
+        "id": "W4",
+        "phase": "Immediate Execution & Inhibiting System Recovery",
+        "text": "Have commands utilizing vssadmin.exe, wbadmin.exe, or wmic been executed to delete volume shadow copies or backup catalog files?",
+        "guidance": "Check Security Event ID 4688 or Sysmon Event ID 1 for command lines containing 'delete shadows' or 'resize shadowstorage'.",
+        "technique_id": "T1490",
+        "technique_name": "Inhibit System Recovery",
+        "allow_multiple": true,
+        "options": [
+          {"label": "Affirmative / Present", "value": "VSS_DELETED_PRESENT", "action": "FLAG_CRITICAL_DEPLOYMENT_ACTIVE"},
+          {"label": "Negative / Absent", "value": "VSS_DELETED_ABSENT", "action": "PROGRESS"},
+          {"label": "No Telemetry / Don't Know", "value": "VSS_DELETED_UNKNOWN", "action": "APPEND_TASK", "task_text": "Check Security Event ID 4688 or Sysmon Event ID 1 for command lines containing 'delete shadows'."}
+        ]
+      },
+      {
+        "id": "W5",
+        "phase": "Immediate Execution & Inhibiting System Recovery",
+        "text": "Are critical production database services (e.g., MSSQL, Exchange) or backup agent tasks being force-stopped or killed?",
+        "guidance": "Check for taskkill commands or net stop scripts running in quick succession.",
+        "technique_id": "T1489",
+        "technique_name": "Service Stop",
+        "allow_multiple": true,
+        "options": [
+          {"label": "Affirmative / Present", "value": "DB_STOP_PRESENT", "action": "FLAG_PAYLOAD_PREPPING"},
+          {"label": "Negative / Absent", "value": "DB_STOP_ABSENT", "action": "PROGRESS"},
+          {"label": "No Telemetry / Don't Know", "value": "DB_STOP_UNKNOWN", "action": "APPEND_TASK", "task_text": "Check for taskkill commands or net stop scripts running in quick succession."}
+        ]
+      },
+      {
+        "id": "W6",
+        "phase": "Exfiltration & Double Extortion Detection",
+        "text": "Has there been an unexpected deployment of network synchronization tools (e.g., Rclone, MegaSync, AnyDesk) or high-volume outbound data transfers?",
+        "guidance": "Check Sysmon Event ID 1 for execution of rclone.exe or firewall logs for sustained high-bandwidth uploads to cloud storage providers.",
+        "technique_id": "T1020",
+        "technique_name": "Automated Exfiltration",
+        "allow_multiple": true,
+        "options": [
+          {"label": "Rclone/Sync Utilities Observed", "value": "EXFIL_TOOLS_PRESENT", "action": "FLAG_DATA_THEFT_RISK"},
+          {"label": "Negative / Low Traffic", "value": "EXFIL_ABSENT", "action": "PROGRESS"}
+        ]
+      }
+    ],
+    "esxi_hypervisor_ransomware": [
+      {
+        "id": "E1",
+        "phase": "Initial Foothold & Host Access",
+        "text": "Has unexpected or unauthenticated SSH activity been detected on the ESXi host, or has the ESXi Shell been suddenly enabled via the direct console interface?",
+        "guidance": "Instruct analyst to verify ESXi Host Configuration -> Services security posture.",
+        "technique_id": "T1133",
+        "technique_name": "External Remote Services",
+        "allow_multiple": true,
+        "options": [
+          {"label": "SSH Sessions Active", "value": "ESXI_SSH_ACTIVE", "action": "QUEUE_BRANCH", "target_branch": "esxi_ssh_forensics"},
+          {"label": "ESXi Shell Enabled", "value": "ESXI_SHELL_ENABLED", "action": "QUEUE_BRANCH", "target_branch": "esxi_shell_audit"},
+          {"label": "Negative / No Shell Activity", "value": "ESXI_SHELL_CLEAN", "action": "PROGRESS"},
+          {"label": "No Telemetry / Don't Know", "value": "ESXI_SHELL_UNKNOWN", "action": "APPEND_TASK", "task_text": "Verify ESXi Host Configuration -> Services security posture."}
+        ]
+      },
+      {
+        "id": "E2",
+        "phase": "Initial Foothold & Host Access",
+        "text": "Are there indicators of known vulnerability exploitation (e.g., OpenSLP, vCenter CVEs) targeting the hypervisor's public or internal network ports?",
+        "guidance": "Check for unexpected traffic targeting Port 427 or unapproved drops in vSphere web directories.",
+        "technique_id": "T1190",
+        "technique_name": "Exploit Public-Facing Application",
+        "allow_multiple": true,
+        "options": [
+          {"label": "OpenSLP Traffic Anomalies", "value": "OPENSLP_ANOMALY", "action": "QUEUE_BRANCH", "target_branch": "openslp_memory_forensics"},
+          {"label": "vCenter Web Directory Drops", "value": "VCENTER_DROP", "action": "QUEUE_BRANCH", "target_branch": "vcenter_webshell_analysis"},
+          {"label": "Negative / Checked", "value": "ESXI_EXPLOIT_CLEAN", "action": "PROGRESS"}
+        ]
+      },
+      {
+        "id": "E3",
+        "phase": "Execution & System Subversion",
+        "text": "Are virtual machines being systematically shut down, terminated, or unregistered using native commands like esxcli or vim-cmd?",
+        "guidance": "Identify the source shell process ID or remote execution console commands targeting virtual machines.",
+        "technique_id": "T1489",
+        "technique_name": "Service Stop",
+        "allow_multiple": true,
+        "options": [
+          {"label": "vim-cmd vmsvc/power.off Detected", "value": "VIMCMD_POWER_OFF", "action": "QUEUE_BRANCH", "target_branch": "esxi_power_kill_analysis"},
+          {"label": "esxcli vm process kill Executed", "value": "ESXCLI_VM_KILL", "action": "QUEUE_BRANCH", "target_branch": "esxi_process_kill_analysis"},
+          {"label": "Negative / VMs Running", "value": "ESXI_VMS_RUNNING", "action": "PROGRESS"}
+        ]
+      },
+      {
+        "id": "E4",
+        "phase": "Immediate Encryption Impact",
+        "text": "Are storage datastore files (.vmdk, .vmem, .vmsd) being renamed, appended with custom extensions, or modified at high speed?",
+        "guidance": "Review active file lock mechanisms and prioritize immediate target datastore isolation paths.",
+        "technique_id": "T1486",
+        "technique_name": "Data Encrypted for Impact",
+        "allow_multiple": true,
+        "options": [
+          {"label": "Target Extensions Appended", "value": "DS_EXT_APPENDED", "action": "TRIGGER_EMERGENCY_CONTAINMENT"},
+          {"label": "Ransom Note Files Dropped", "value": "DS_NOTE_DROPPED", "action": "EXTRACT_ATTRIBUTION"},
+          {"label": "Negative / Datastores Clean", "value": "DS_CLEAN", "action": "PROGRESS"}
+        ]
+      },
+      {
+        "id": "E5",
+        "phase": "Storage Network Architecture Security",
+        "text": "Are the underlying datastore storage networks (NFS/iSCSI SAN arrays) reporting storage disconnection faults, or has their distinct management interface been accessed?",
+        "guidance": "Examine the hardware management console logs of your physical storage appliance (e.g., NetApp, Synology) for unapproved administrative changes.",
+        "technique_id": "T1190",
+        "technique_name": "Exploit Public-Facing Application",
+        "allow_multiple": true,
+        "options": [
+          {"label": "SAN/NAS Console Accessed", "value": "STORAGE_CONSOLE_COMPROMISE", "action": "ISOLATE_STORAGE_FABRIC"},
+          {"label": "Negative / Storage Normal", "value": "STORAGE_CLEAN", "action": "PROGRESS"}
+        ]
+      }
+    ],
+    "cloud_idp_compromise": [
+      {
+        "id": "C1",
+        "phase": "Authentication & Access Manipulation",
+        "text": "Have there been any administrative or high-privilege account sign-ins originating from anomalous locations, untrusted IP ranges, or via known hosting providers/VPNs?",
+        "guidance": "Instruct analyst to instantly pull the Entra ID Sign-in logs or Okta System Log.",
+        "technique_id": "T1078.004",
+        "technique_name": "Valid Accounts: Cloud Accounts",
+        "allow_multiple": true,
+        "options": [
+          {"label": "Impossible Travel Detected", "value": "CLOUD_IMPOSSIBLE_TRAVEL", "action": "QUEUE_BRANCH", "target_branch": "geo_sign_in_analysis"},
+          {"label": "Known Proxy/Hosting IPs Used", "value": "CLOUD_PROXY_USED", "action": "QUEUE_BRANCH", "target_branch": "ip_intel_cross_reference"},
+          {"label": "Negative / No Login Anomalies", "value": "CLOUD_LOGINS_CLEAN", "action": "PROGRESS"},
+          {"label": "No Telemetry / Don't Know", "value": "CLOUD_LOGINS_UNKNOWN", "action": "APPEND_TASK", "task_text": "Instantly pull the Entra ID Sign-in logs or Okta System Log."}
+        ]
+      },
+      {
+        "id": "C2",
+        "phase": "Authentication & Access Manipulation",
+        "text": "Is there evidence of 'MFA fatigue' attacks (push spamming), unauthorized registration of new MFA factors, or session token hijacking?",
+        "guidance": "Look for token reuse across distinct browser user-agents or high-frequency denied push events.",
+        "technique_id": "T1562.001",
+        "technique_name": "Impair Defenses: Disable or Modify Tools",
+        "allow_multiple": true,
+        "options": [
+          {"label": "MFA Push Spam / Fatigue", "value": "MFA_FATIGUE", "action": "QUEUE_BRANCH", "target_branch": "mfa_push_spam_audit"},
+          {"label": "New MFA Device Registered", "value": "MFA_NEW_DEVICE", "action": "QUEUE_BRANCH", "target_branch": "device_enrollment_verification"},
+          {"label": "Session Token Theft Suspected", "value": "MFA_TOKEN_THEFT", "action": "QUEUE_BRANCH", "target_branch": "token_use_fingerprinting"},
+          {"label": "Negative / MFA Enforced", "value": "MFA_CLEAN", "action": "PROGRESS"}
+        ]
+      },
+      {
+        "id": "C3",
+        "phase": "Authorization, Trust & Persistence Alterations",
+        "text": "Have unexpected modifications been made to directory objects, such as adding rogue global administrators, creating unmonitored service principals, or altering tenant federation settings?",
+        "guidance": "Track the source account that authorized permission elevation or application registrations.",
+        "technique_id": "T1136.002",
+        "technique_name": "Create Account: Domain Account",
+        "allow_multiple": true,
+        "options": [
+          {"label": "New Global Admin / Owner Added", "value": "DIR_NEW_ADMIN", "action": "QUEUE_BRANCH", "target_branch": "admin_elevation_forensics"},
+          {"label": "Malicious Service Principal Created", "value": "DIR_NEW_SPN", "action": "QUEUE_BRANCH", "target_branch": "api_permission_audit"},
+          {"label": "Tenant Federation Modified", "value": "DIR_FED_MODIFIED", "action": "QUEUE_BRANCH", "target_branch": "tenant_trust_verification"},
+          {"label": "Negative / Config Untouched", "value": "DIR_CLEAN", "action": "PROGRESS"}
+        ]
+      },
+      {
+        "id": "C4",
+        "phase": "Cloud Storage & Backup Invalidation",
+        "text": "Are administrative accounts being used to delete cloud storage snapshots, clear AWS S3/Azure Blob lifecycle retention rules, or alter enterprise backup vault configurations?",
+        "guidance": "Immediate critical isolation of the compromised administrative tenant.",
+        "technique_id": "T1490",
+        "technique_name": "Inhibit System Recovery",
+        "allow_multiple": true,
+        "options": [
+          {"label": "Vault Deletion / Purging", "value": "VAULT_PURGED", "action": "ISOLATE_ADMIN_TENANT"},
+          {"label": "Lifecycle Policy Alteration", "value": "LIFECYCLE_ALTERED", "action": "RESTORE_OBJECT_LOCKS"},
+          {"label": "Negative / Backups Intact", "value": "VAULT_CLEAN", "action": "PROGRESS"}
+        ]
+      },
+      {
+        "id": "C5",
+        "phase": "Containment & Eviction Verification",
+        "text": "Have all active user session tokens and browser cookie authorizations for the compromised accounts been explicitly invalidated/revoked inside the IdP manager?",
+        "guidance": "Password changes do not terminate active sessions. You must click 'Revoke Sessions' in Okta or Entra ID to forcefully evict a token-hijacking adversary.",
+        "technique_id": "T1562.001",
+        "technique_name": "Impair Defenses: Disable or Modify Tools",
+        "allow_multiple": false,
+        "options": [
+          {"label": "Yes - All Sessions Revoked", "value": "TOKENS_INVALIDATED", "action": "PROGRESS"},
+          {"label": "No / Unsure", "value": "TOKENS_ACTIVE", "action": "APPEND_TASK", "task_text": "CRITICAL: Issue a global session revocation command immediately for all impacted administrative entities."}
+        ]
+      }
+    ],
+    "linux_host_ransomware": [
+      {
+        "id": "L1",
+        "phase": "Access Verification & Local Discovery",
+        "text": "Has there been an unexpected emergence of interactive tty shells or raw command-line executions originating from low-privilege system accounts (e.g., www-data, apache, nobody)?",
+        "guidance": "Instruct analyst to instantly run who and w commands or view /var/log/auth.log.",
+        "technique_id": "T1059.004",
+        "technique_name": "Command and Scripting Interpreter: Unix Shell",
+        "allow_multiple": true,
+        "options": [
+          {"label": "Web App Account Spawning Bash", "value": "LINUX_SHELL_RCE", "action": "QUEUE_BRANCH", "target_branch": "rce_vector_hunting"},
+          {"label": "Unexpected SSH Key Additions", "value": "LINUX_SSH_KEY", "action": "QUEUE_BRANCH", "target_branch": "ssh_key_integrity_check"},
+          {"label": "Negative / No Abnormal Shells", "value": "LINUX_SHELL_CLEAN", "action": "PROGRESS"},
+          {"label": "No Telemetry / Don't Know", "value": "LINUX_SHELL_UNKNOWN", "action": "APPEND_TASK", "task_text": "Instruct analyst to instantly run who and w commands or view /var/log/auth.log."}
+        ]
+      },
+      {
+        "id": "L2",
+        "phase": "Access Verification & Local Discovery",
+        "text": "Is there evidence of successful or high-frequency failed execution of the sudo command, or exploitation of local kernel bugs to achieve root access?",
+        "guidance": "Inspect /etc/sudoers or /etc/sudoers.d/ for rogue configuration lines.",
+        "technique_id": "T1068",
+        "technique_name": "Exploitation for Privilege Escalation",
+        "allow_multiple": true,
+        "options": [
+          {"label": "Sudoers File Modified", "value": "LINUX_SUDO_MOD", "action": "QUEUE_BRANCH", "target_branch": "sudoers_file_forensics"},
+          {"label": "High-Frequency Sudo Failures", "value": "LINUX_SUDO_FAIL", "action": "QUEUE_BRANCH", "target_branch": "brute_force_user_audit"},
+          {"label": "Negative / Permissions Normal", "value": "LINUX_PRIV_CLEAN", "action": "PROGRESS"}
+        ]
+      },
+      {
+        "id": "L3",
+        "phase": "Defense Evasion & Service Disruption",
+        "text": "Are database daemons or production services (e.g., mysqld, postgres, dockerd) being stopped via systemctl, service, or explicit process killing?",
+        "guidance": "Identify the shell process ID that initiated the service unit change or process killing signals.",
+        "technique_id": "T1489",
+        "technique_name": "Service Stop",
+        "allow_multiple": true,
+        "options": [
+          {"label": "systemctl stop Commands Run", "value": "LINUX_SYSTEMCTL_STOP", "action": "QUEUE_BRANCH", "target_branch": "service_unit_forensics"},
+          {"label": "Heavy kill -9 Process Signals", "value": "LINUX_PROCESS_KILLED", "action": "QUEUE_BRANCH", "target_branch": "sigkill_source_tracking"},
+          {"label": "Negative / Daemons Active", "value": "LINUX_SERVICES_ACTIVE", "action": "PROGRESS"}
+        ]
+      },
+      {
+        "id": "L4",
+        "phase": "Defense Evasion & Service Disruption",
+        "text": "Have standard history files, audit logs, or system monitoring files been cleared, deleted, or pointed to /dev/null?",
+        "guidance": "Inspect auditd frameworks or centralized syslog servers for out-of-band records.",
+        "technique_id": "T1070.004",
+        "technique_name": "Indicator Removal: File Deletion",
+        "allow_multiple": true,
+        "options": [
+          {"label": ".bash_history Cleared / Linked", "value": "BASH_HIST_PURGED", "action": "QUEUE_BRANCH", "target_branch": "bash_evasion_forensics"},
+          {"label": "/var/log/ Contents Purged", "value": "VAR_LOG_PURGED", "action": "QUEUE_BRANCH", "target_branch": "syslog_integrity_check"},
+          {"label": "Negative / Integrity Intact", "value": "LINUX_LOGS_INTACT", "action": "PROGRESS"}
+        ]
+      },
+      {
+        "id": "L5",
+        "phase": "Immediate Encryption Impact",
+        "text": "Are production directories (/var/www, /opt, /home) seeing a rapid spike in file renaming events, custom extensions, or ransom notes being dropped?",
+        "guidance": "Trigger emergency server isolation (disconnect virtual network interface or kill suspicious parent disk threads).",
+        "technique_id": "T1486",
+        "technique_name": "Data Encrypted for Impact",
+        "allow_multiple": true,
+        "options": [
+          {"label": "Mass Encryption Extensions", "value": "LINUX_ENC_RUNNING", "action": "ISOLATE_LINUX_NIC"},
+          {"label": "Ransom Note Files Dropped", "value": "LINUX_NOTE_DROPPED", "action": "HARVEST_RANSOM_STRINGS"},
+          {"label": "Negative / Files Normal", "value": "LINUX_FILES_CLEAN", "action": "PROGRESS"}
+        ]
+      }
+    ]
+  }
+}

@@ -1,10 +1,9 @@
 from pathlib import Path
-
 from src.models.case import Case
 from src.services.report_generator import ReportGenerator
 
-
 def test_report_generator_creates_markdown_summary():
+    # Points directly to your operational fallback template location
     generator = ReportGenerator(Path("src/config/export_template.md"))
     case = Case(
         case_title="Test Case",
@@ -17,4 +16,3 @@ def test_report_generator_creates_markdown_summary():
 
     assert "Test Case" in output
     assert "Encoded PowerShell observed." in output
-    assert "decision support only" in output

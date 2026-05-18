@@ -1,11 +1,12 @@
 import sys
 from pathlib import Path
 
+# Establish deterministic workspace path alignment before triggering core modules
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(PROJECT_ROOT))
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
 from src.app import run_app
 
-
 if __name__ == "__main__":
-    raise SystemExit(run_app())
+    sys.exit(run_app())

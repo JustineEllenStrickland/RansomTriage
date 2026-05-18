@@ -4,27 +4,27 @@
 
 | ID | Requirement |
 |---|---|
-| FR1 | The system shall allow an analyst to create a new ransomware triage case. |
+| FR1 | The system shall allow an analyst to create a new ransomware triage case with a structured tracking index schema. |
 | FR2 | The system shall allow an analyst to enter suspicious observations related to script execution, account anomalies, rapid file changes, endpoint behavior, or other early ransomware indicators. |
-| FR3 | The system shall guide the analyst through branching triage questions based on the selected observation type. |
-| FR4 | The system shall map selected observations and analyst responses to candidate ransomware-related MITRE ATT&CK techniques. |
-| FR5 | The system shall recommend relevant evidence sources based on candidate technique mappings and available telemetry. |
-| FR6 | The system shall generate a structured case summary that includes observations, candidate mappings, evidence recommendations, limitations, and analyst notes. |
-| FR7 | The system shall label ATT&CK mappings as possible or candidate findings rather than confirmed incident classifications. |
-| FR8 | The system shall separate user-generated case notes from mapping and workflow rule files. |
-| FR9 | The system shall support scenario-based evaluation using sample, public, or sanitized data. |
-| FR10 | The system shall allow export of the reviewed case summary for documentation or escalation. |
+| FR3 | The system shall guide the analyst through an interactive telemetry triage matrix panel based on platform-specific ransomware observation categories. |
+| FR4 | The system shall map selected matrix indicators and analyst responses to candidate ransomware-related MITRE ATT&CK techniques with associated confidence scores. |
+| FR5 | The system shall evaluate visibility gaps and recommend relevant evidence sources based on candidate technique mappings and available vs. unavailable telemetry pipelines. |
+| FR6 | The system shall compile a structured case summary that includes metadata, raw observations, candidate mappings, evidence recommendations, operational limitations, and analyst notes. |
+| FR7 | The system shall explicitly label ATT&CK mappings as candidate findings rather than confirmed incident classifications to mitigate automation bias. |
+| FR8 | The system shall separate user-generated case notes from mapping data and workflow rule definitions using decoupled external configuration files (`attack_mappings.json`, `evidence_sources.json`). |
+| FR9 | The system shall support offline, scenario-based evaluation using public, synthetic, or sanitized data profiles. |
+| FR10 | The system shall allow the permanent export of the finalized case summary to disk as a production-ready Markdown (.md) document. |
 
 ## Nonfunctional Requirements
 
 | Category | Requirement |
 |---|---|
-| Performance | The prototype should support rapid scenario-based triage on a standard workstation without requiring live enterprise integrations. |
-| Usability | The interface should be understandable to junior or mid-level analysts and should reduce missed evidence through structured prompts. |
-| Reliability | The system should preserve entered case data during a session and reduce incomplete or inconsistent case summaries. |
-| Scalability | The system should allow additional ATT&CK techniques, workflow questions, and evidence sources to be added without redesigning the full application. |
-| Security | The system should minimize stored sensitive data, rely on local operating system access controls, and exclude sensitive case files from public repositories. |
-| Maintainability | ATT&CK mappings and workflow logic should be stored separately from the interface so that rules can be reviewed, updated, and version controlled. |
-| Portability | The prototype should remain platform-independent where feasible. |
-| Privacy | The system should use sanitized testing data and avoid requiring analysts to paste full raw logs or unnecessary personal identifiers. |
-| Ethical Use | The system should disclose that it provides decision support and does not make definitive incident classifications. |
+| Performance | The desktop prototype shall execute rapid, unbuffered scenario-based triage cycles locally without requiring live enterprise SIEM or cloud service API integrations. |
+| Usability | The graphical interface shall use a clean, tabbed layout understandable to tier-1/tier-2 defensive security analysts, reducing missed evidence through grouped telemetry checklists. |
+| Reliability | The application shall enforce runtime logging tracking all case configurations, state updates, and file I/O operations seamlessly into a persistent diagnostic file. |
+| Scalability | The schema architecture shall allow additional ATT&CK techniques, matrix indicators, and evidence sources to be injected directly via JSON modifications without restructuring the source code. |
+| Security | The system shall enforce data minimization, process analysis via local workspace parameters, and explicitly exclude active runtime case logs from public repositories via robust `.gitignore` boundaries. |
+| Maintainability | Rules logic, mapping arrays, and reporting templates shall reside strictly outside the core user interface module to ensure clean version control isolation. |
+| Portability | The prototype application shall remain platform-independent, operating seamlessly across Linux (including Kali Linux), macOS, and Windows environments running Python 3.x and PyQt6. |
+| Privacy | The system shall utilize synthetic staging profiles and explicitly prompt analysts to omit unnecessary personal identifiers, hostnames, or production-sensitive raw logs. |
+| Ethical Use | The interface and final summary output shall maintain persistent, prominent classification disclaimers stating that the application functions strictly as a human-in-the-loop decision support system. |
